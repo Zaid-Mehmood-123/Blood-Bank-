@@ -1,0 +1,148 @@
+import tkinter as tk
+from tkinter import messagebox
+import csv
+
+class Donor:
+    def __init__(self, name, age, blood_type):
+        self.name = name
+        self.age = age
+        self.blood_type = blood_type
+    def to_csv(self):
+        return [self.name, str(self.age), self.blood_type]
+
+class Receiver:
+    def __init__(self, name, age, blood_type):
+        self.name = name
+        self.age = age
+        self.blood_type = blood_type
+    def to_csv(self):
+        return [self.name, str(self.age), self.blood_type]
+
+class BloodInventory:
+    def __init__(self):
+        self.inventory = {'A+': 0, 'A-': 0, 'B+': 0, 'B-': 0, 'AB+': 0, 'AB-': 0, 'O+': 0, 'O-': 0}
+    def add_blood(self, blood_type, units):
+        if blood_type in self.inventory:
+            self.inventory[blood_type] += units
+    def remove_blood(self, blood_type, units):
+        if blood_type in self.inventory and self.inventory[blood_type] >= units:
+            self.inventory[blood_type] -= units
+    def get_inventory(self):
+        return self.inventory
+
+class BloodManagementApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Blood Management System")
+        self.inventory = BloodInventory()
+        self.setup_gui()
+
+    def setup_gui(self):
+        tk.Label(self.root, text="Donor Name").grid(row=0, column=0, padx=5, pady=5)
+        self.donor_name = tk.Entry(self.root)
+        self.donor_name.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(self.root, text="Donor Age").grid(row=1, column=0, padx=5, pady=5)
+        self.donor_age = tk.Entry(self.root)
+        self.donor_age.grid(row=1, column=1, padx=5, pady=5)
+
+        tk.Label(self.root, text="Donor Blood Type").grid(row=2, column=0, padx=5, pady=5)
+        self.donor_blood_type = tk.Entry(self.root)
+        self.donor_blood_type.grid(row=2, column=1, padx=5, pady=5)
+
+        tk.Button(self.root, text="Add Donor and 1 Unit", command=self.add_donor).grid(row=3, column=0, columnspan=2, pady=5)
+
+
+        tk.Label(self.root, text="Receiver Name").grid(row=4, column=0, padx=5, pady=5)
+        self.receiver_name = tk.Entry(self.root)
+        self.receiver_name.grid(row=4, column=1, padx=5, pady=5)
+
+        tk.Label(self.root, text="Receiver Age").grid(row=5, column=0, padx=5, pady=5)
+        self.receiver_age = tk.Entry(self.root)
+        self.receiver_age.grid(row=5, column=1, padx=5, pady=5)
+
+        tk.Label(self.root, text="Receiver Blood Type").grid(row=6, column=0, padx=5, pady=5)
+        self.receiver_blood_type = tk.Entry(self.root)
+        self.receiver_blood_type.grid(row=6, column=1, padx=5, pady=5)
+
+        tk.Button(self.root, text="Request Blood", command=self.request_blood).grid(row=7, column=0, columnspan=2, pady=5)
+
+     
+        tk.Label(self.root, text="Blood Type for Inventory").grid(row=8, column=0, padx=5, pady=5)
+        self.inventory_blood_type = tk.Entry(self.root)
+        self.inventory_blood_type.grid(row=8, column=1, padx=5, pady=5)
+
+        tk.Label(self.root, text="Units").grid(row=9, column=0, padx=5, pady=5)
+        self.units = tk.Entry(self.root)
+        self.units.grid(row=9, column=1, padx=5, pady=5)
+
+        tk.Button(self.root, text="Add Blood", command=self.add_blood).grid(row=10, column=0, pady=5)
+        tk.Button(self.root, text="Remove Blood", command=self.remove_blood).grid(row=10, column=1, pady=5)
+        tk.Button(self.root, text="Show Inventory", command=self.show_inventory).grid(row=11, column=0, columnspan=2, pady=5)
+
+    def add_donor(self):
+        name = self.donor_name.get()
+        age = self.donor_age.get()
+        blood_type = self.donor_blood_type.get().upper()
+
+        if name and age.isdigit() and blood_type in self.inventory.inventory:
+            donor = Donor(name, int(age), blood_type)
+            self.inventory.add_blood(blood_type, 1)  
+            with open("donors.csv", "a", newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(donor.to_csv())
+            messagebox.showinfo("Success", f"Added {donor.name} and 1 unit of {blood_type} blood.")
+        else:
+            messagebox.showerror("Error", "Invalid donor information.")
+
+    def request_blood(self):
+        name = self.receiver_name.get()
+        age = self.receiver_age.get()
+        blood_type = self.receiver_blood_type.get().upper()
+
+        if name and age.isdigit() and blood_type in self.inventory.inventory:
+            receiver = Receiver(name, int(age), blood_type)
+            if self.inventory.inventory[blood_type] > 0:
+                self.inventory.remove_blood(blood_type, 1)
+                with open("receivers.csv", "a", newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(receiver.to_csv())
+                messagebox.showinfo("Success", f"Blood requested for {receiver.name}. 1 unit of {blood_type} blood has been removed from the inventory.")
+            else:
+                messagebox.showerror("Error", f"Insufficient {blood_type} blood units available.")
+        else:
+            messagebox.showerror("Error", "Invalid receiver information.")
+
+    def add_blood(self):
+        blood_type = self.inventory_blood_type.get().upper()
+        units = self.units.get()
+
+        if blood_type in self.inventory.inventory and units.isdigit():
+            self.inventory.add_blood(blood_type, int(units))
+            with open("inventory.csv", "a", newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow([blood_type, units])
+            messagebox.showinfo("Success", f"Added {units} units of {blood_type} blood.")
+        else:
+            messagebox.showerror("Error", "Invalid blood type or units.")
+
+    def remove_blood(self):
+        blood_type = self.inventory_blood_type.get().upper()
+        units = self.units.get()
+
+        if blood_type in self.inventory.inventory and units.isdigit():
+            self.inventory.remove_blood(blood_type, int(units))
+            messagebox.showinfo("Success", f"Removed {units} units of {blood_type} blood.")
+        else:
+            messagebox.showerror("Error", "Invalid blood type or units.")
+
+    def show_inventory(self):
+        inventory = self.inventory.get_inventory()
+        inventory_str = "\n".join([f"{bt}: {units} units" for bt, units in inventory.items()])
+        messagebox.showinfo("Blood Inventory", inventory_str)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = BloodManagementApp(root)
+    root.mainloop()
+
